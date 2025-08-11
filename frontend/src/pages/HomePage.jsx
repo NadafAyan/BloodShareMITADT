@@ -9,7 +9,7 @@ import { useActiveAccount, ConnectButton } from "thirdweb/react";
 
 // This is the address that will be considered the admin.
 // **IMPORTANT:** Replace this with your specific MetaMask account address.
-const adminAddress = "0xA2ea32d7940870794E6746B9b20A97fD399FF898".toLowerCase();
+const adminAddress = "0x7366736884B619fDBD3B2645F4338F6aE0859514".toLowerCase();
 
 export default function HomePage() {
   // Use the thirdweb hook to get the active account
