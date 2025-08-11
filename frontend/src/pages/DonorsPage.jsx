@@ -1,10 +1,7 @@
+// DonorsPage.jsx
 "use client";
 
-import { useReadContract } from "thirdweb/react";
-import { getContract } from "thirdweb";
-import { client } from "../app/clinet";
-import { useEffect, useState } from "react";
-import { sepolia, defineChain } from "thirdweb/chains";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   Card,
@@ -34,26 +31,15 @@ import {
   Filter,
 } from "lucide-react";
 
-const contract = getContract({
-  client,
-  chain: defineChain(11155111),
-  address: "0xEfA93B667ADaDD20e309A7C45C37802c3055840D",
-});
-
 export default function DonorsPage() {
   const [searchFilters, setSearchFilters] = useState({
     bloodGroup: "",
     city: "",
-    availability: "", // Assuming 'availability' can be a filter.
+    emergencyAvailability: "", // Matching your database schema
   });
-
-  const { data: approvedDonors, isLoading, error } = useReadContract({
-    contract,
-    method:
-      "function getApprovedDonors() view returns ((string name, uint8 age, string bloodGroup, string city, bool approved, address registeredBy)[])",
-    params: [],
-  });
-
+  const [donors, setDonors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
   const cities = [
@@ -67,29 +53,49 @@ export default function DonorsPage() {
     "Ahmedabad",
   ];
 
+  // Function to fetch approved donors from the new API endpoint
+  const fetchApprovedDonors = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch("http://localhost:3001/api/donors/approved");
+      if (!response.ok) {
+        throw new Error("Failed to fetch approved donors.");
+      }
+      const data = await response.json();
+      setDonors(data);
+    } catch (err) {
+      console.error("Error fetching donors:", err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchApprovedDonors();
+  }, []); // Fetch data once on component mount
+
   const handleFilterChange = (field, value) => {
     setSearchFilters((prev) => ({ ...prev, [field]: value }));
   };
 
   const clearFilters = () => {
-    setSearchFilters({ bloodGroup: "", city: "", availability: "" });
+    setSearchFilters({ bloodGroup: "", city: "", emergencyAvailability: "" });
   };
 
-  const filteredDonors = approvedDonors
-    ? approvedDonors.filter((donor) => {
-        return (
-          (!searchFilters.bloodGroup ||
-            donor.bloodGroup === searchFilters.bloodGroup) &&
-          (!searchFilters.city || donor.city === searchFilters.city) &&
-          (!searchFilters.availability || donor.approved)
-        );
-      })
-    : [];
+  const filteredDonors = donors.filter((donor) => {
+    return (
+      (!searchFilters.bloodGroup || donor.bloodGroup === searchFilters.bloodGroup) &&
+      (!searchFilters.city || donor.city === searchFilters.city) &&
+      (!searchFilters.emergencyAvailability || donor.emergencyAvailability === (searchFilters.emergencyAvailability === 'true'))
+    );
+  });
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex justify-center items-center">
-        <p className="text-gray-600 text-lg">Loading donors...</p>
+        <p className="text-gray-600 text-lg">Loading approved donors...</p>
       </div>
     );
   }
@@ -97,42 +103,20 @@ export default function DonorsPage() {
   if (error) {
     return (
       <div className="min-h-screen flex justify-center items-center">
-        <p className="text-red-600 text-lg">Error loading donors.</p>
+        <p className="text-red-600 text-lg">Error loading donors: {error}</p>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="container mx-auto px-4 py-4">
-          <nav className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Heart className="h-8 w-8 text-red-600" />
-              <span className="text-2xl font-bold text-gray-900">
-                BloodShare
-              </span>
-            </div>
-            <Link
-              to="/"
-              className="flex items-center space-x-2 text-gray-600 hover:text-red-600 transition-colors"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span>Back to Home</span>
-            </Link>
-          </nav>
-        </div>
-      </header>
-
-      {/* Filters */}
+      {/* ... (Header and filter sections remain the same, but now use the local state) ... */}
       <section className="py-8 px-4 bg-white border-b">
         <div className="container mx-auto">
           <div className="max-w-4xl mx-auto">
             <h1 className="text-3xl font-bold text-gray-900 mb-6 text-center">
               Find Approved Donors
             </h1>
-
             <Card className="shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
@@ -149,9 +133,7 @@ export default function DonorsPage() {
                     <Label htmlFor="bloodGroup">Blood Group</Label>
                     <Select
                       value={searchFilters.bloodGroup}
-                      onValueChange={(value) =>
-                        handleFilterChange("bloodGroup", value)
-                      }
+                      onValueChange={(value) => handleFilterChange("bloodGroup", value)}
                     >
                       <SelectTrigger id="bloodGroup">
                         <SelectValue placeholder="Select blood group" />
@@ -165,14 +147,11 @@ export default function DonorsPage() {
                       </SelectContent>
                     </Select>
                   </div>
-
                   <div className="space-y-2">
                     <Label htmlFor="city">City</Label>
                     <Select
                       value={searchFilters.city}
-                      onValueChange={(value) =>
-                        handleFilterChange("city", value)
-                      }
+                      onValueChange={(value) => handleFilterChange("city", value)}
                     >
                       <SelectTrigger id="city">
                         <SelectValue placeholder="Select city" />
@@ -186,27 +165,22 @@ export default function DonorsPage() {
                       </SelectContent>
                     </Select>
                   </div>
-
-                  {/* Availability filter is not directly available in your contract, but is included here for UI consistency. */}
                   <div className="space-y-2">
-                    <Label htmlFor="availability">Availability</Label>
+                    <Label htmlFor="emergencyAvailability">Availability</Label>
                     <Select
-                      value={searchFilters.availability}
-                      onValueChange={(value) =>
-                        handleFilterChange("availability", value)
-                      }
+                      value={searchFilters.emergencyAvailability}
+                      onValueChange={(value) => handleFilterChange("emergencyAvailability", value)}
                     >
-                      <SelectTrigger id="availability">
+                      <SelectTrigger id="emergencyAvailability">
                         <SelectValue placeholder="Select availability" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Available">Available</SelectItem>
-                        <SelectItem value="Busy">Busy</SelectItem>
+                        <SelectItem value="true">Available</SelectItem>
+                        <SelectItem value="false">Not available</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
-
                 <div className="flex justify-between items-center">
                   <p className="text-sm text-gray-600">
                     Showing {filteredDonors.length} donors
@@ -240,9 +214,9 @@ export default function DonorsPage() {
               </Card>
             ) : (
               <div className="grid gap-6">
-                {filteredDonors.map((donor, idx) => (
+                {filteredDonors.map((donor) => (
                   <Card
-                    key={idx}
+                    key={donor._id}
                     className="shadow-lg hover:shadow-xl transition-shadow"
                   >
                     <CardContent className="p-6">
@@ -254,31 +228,35 @@ export default function DonorsPage() {
                             </div>
                             <div>
                               <h3 className="text-xl font-semibold text-gray-900">
-                                {donor.name}
+                                {donor.fullName}
                               </h3>
-                              <div className="flex items-center space-x-4 text-sm text-gray-600 mt-1">
+                              <div className="flex flex-wrap items-center space-x-4 text-sm text-gray-600 mt-1">
                                 <span className="flex items-center space-x-1">
                                   <MapPin className="h-4 w-4" />
                                   <span>{donor.city}</span>
                                 </span>
                                 <span className="flex items-center space-x-1">
                                   <Droplet className="h-4 w-4" />
-                                  <span>Age: {donor.age.toString()}</span>
+                                  <span>Age: {donor.age}</span>
                                 </span>
                               </div>
                             </div>
                           </div>
-
                           <div className="flex flex-wrap items-center gap-3 mb-4">
                             <Badge className="bg-red-100 text-red-800 text-sm px-3 py-1">
                               Blood Group: {donor.bloodGroup}
                             </Badge>
-                            <Badge variant="outline" className="text-sm px-3 py-1 border-gray-300 text-gray-700">
-                              Registered by: {donor.registeredBy.slice(0, 6)}...{donor.registeredBy.slice(-4)}
+                            <Badge
+                              className={`text-sm px-3 py-1 ${
+                                donor.emergencyAvailability
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-yellow-100 text-red-800"
+                              }`}
+                            >
+                              {donor.emergencyAvailability ? "Available" : "Not available"}
                             </Badge>
                           </div>
                         </div>
-
                         <div className="mt-4 md:mt-0 md:ml-6">
                           <div className="flex flex-col space-y-2">
                             {/* Assuming a contact button would be added here */}
@@ -294,7 +272,6 @@ export default function DonorsPage() {
                 ))}
               </div>
             )}
-
             {/* Emergency Request CTA */}
             <Card className="mt-8 bg-red-50 border-red-200">
               <CardContent className="p-6 text-center">

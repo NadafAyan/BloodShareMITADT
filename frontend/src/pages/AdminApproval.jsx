@@ -1,71 +1,80 @@
+// AdminApprovals.jsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
-import { User, MapPin, AlertCircle } from "lucide-react";
-import { useActiveAccount, ConnectButton, useReadContract } from "thirdweb/react";
-import { prepareContractCall } from "thirdweb";
-import { useSendTransaction } from "thirdweb/react";
-import {  client,contract } from "../app/clinet";
+import { User, MapPin, AlertCircle, Heart, ArrowLeft, Droplet } from "lucide-react";
+import { useActiveAccount, ConnectButton } from "thirdweb/react";
+import { client } from "../app/clinet";
 
 export default function AdminApprovals() {
-
-  
-
-
+  const [pendingDonors, setPendingDonors] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [processingDonor, setProcessingDonor] = useState(null);
+  const [error, setError] = useState(null);
 
   const account = useActiveAccount();
-  const { mutate: sendTransaction } = useSendTransaction();
+  const adminAddress = "0x7366736884B619fDBD3B2645F4338F6aE0859514".toLowerCase(); // Replace with your actual admin address
+  const isAdmin = account && account.address.toLowerCase() === adminAddress;
 
-  // Use the useReadContract hook to fetch donors
-  const { data: donorList, isPending: loading, refetch } = useReadContract({
-    contract,
-    method: "function getDonorList() view returns ((string name, uint8 age, string bloodGroup, string city, bool approved, address registeredBy)[])",
-    params: [],
-  });
-
-  // Filter only unapproved donors
-  const pendingDonors = donorList ? donorList.filter(donor => !donor.approved) : [];
-
-  const handleApproval = async (donorAddress) => {
+  const fetchPendingDonors = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      setProcessingDonor(donorAddress);
-      
-      const transaction = prepareContractCall({
-        contract,
-        method: "function approveDonor(address donorAddress)",
-        params: [donorAddress],
+      const response = await fetch('http://localhost:3001/api/donors/pending');
+      if (!response.ok) {
+        throw new Error("Failed to fetch pending donors.");
+      }
+      const data = await response.json();
+      setPendingDonors(data);
+    } catch (err) {
+      console.error("Error fetching pending donors:", err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchPendingDonors();
+    }
+  }, [isAdmin]);
+
+  const handleApproval = async (donorId) => {
+    try {
+      setProcessingDonor(donorId);
+
+      const response = await fetch(`http://localhost:3001/api/donors/${donorId}/approve`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
 
-      sendTransaction(transaction, {
-        onSuccess: (result) => {
-          console.log("Approval successful:", result);
-          alert("Donor approved successfully!");
-          refetch(); // Refresh the donor list
-          setProcessingDonor(null);
-        },
-        onError: (error) => {
-          console.error("Approval failed:", error);
-          alert("Failed to approve donor. Please try again.");
-          setProcessingDonor(null);
-        },
-      });
+      if (!response.ok) {
+        throw new Error("Failed to approve donor.");
+      }
+      console.log("Approval successful.");
+      alert("Donor approved successfully!");
+      fetchPendingDonors(); // Refresh the list of pending donors
     } catch (err) {
-      console.error("Error approving donor:", err);
-      alert("Something went wrong. Please try again.");
+      console.error("Approval failed:", err);
+      alert("Failed to approve donor. Please try again.");
+    } finally {
       setProcessingDonor(null);
     }
   };
 
-  if (!account) {
+  if (!isAdmin) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-50 flex items-center justify-center">
-        <Card className="w-96">
+        <Card className="w-96 shadow-lg">
           <CardContent className="p-8 text-center">
-            <h2 className="text-2xl font-bold mb-4">Admin Access Required</h2>
+            <h2 className="text-2xl font-bold mb-4 text-gray-900">Admin Access Required</h2>
             <p className="text-gray-600 mb-6">Please connect your admin wallet to access the approval panel.</p>
             <ConnectButton client={client} />
           </CardContent>
@@ -82,8 +91,15 @@ export default function AdminApprovals() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-50 flex items-center justify-center">
+        <p className="text-red-600 text-lg">Error: {error}</p>
+      </div>
+    );
+  }
+
   return (
-    
     <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-50 py-10 px-4">
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-8">
@@ -100,14 +116,14 @@ export default function AdminApprovals() {
           </div>
         ) : (
           <div className="grid gap-6">
-            {pendingDonors.map((donor, index) => (
-              <Card key={index} className="shadow-md hover:shadow-xl transition-shadow">
+            {pendingDonors.map((donor) => (
+              <Card key={donor._id} className="shadow-md hover:shadow-xl transition-shadow">
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div>
-                      <CardTitle className="text-xl">{donor.name}</CardTitle>
+                      <CardTitle className="text-xl">{donor.fullName}</CardTitle>
                       <CardDescription className="text-sm text-gray-500">
-                        Wallet: {donor.registeredBy}
+                        Wallet: {donor.walletAddress}
                       </CardDescription>
                     </div>
                     <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>
@@ -116,25 +132,25 @@ export default function AdminApprovals() {
                 <CardContent className="space-y-4">
                   <div className="text-gray-700 space-y-2">
                     <p className="flex items-center space-x-2">
-                      <User className="w-4 h-4 text-red-500 mr-2" /> 
-                      Age: {donor.age.toString()}
+                      <Droplet className="w-4 h-4 text-red-500" />
+                      Blood Group: <span className="font-medium ml-1">{donor.bloodGroup}</span>
                     </p>
                     <p className="flex items-center space-x-2">
-                      <MapPin className="w-4 h-4 text-red-500 mr-2" /> 
-                      {donor.city}
+                      <MapPin className="w-4 h-4 text-red-500" />
+                      City: <span className="ml-1">{donor.city}</span>
                     </p>
-                    <p>
-                      Blood Group: <span className="font-medium">{donor.bloodGroup}</span>
+                    <p className="flex items-center space-x-2">
+                      <User className="w-4 h-4 text-red-500" />
+                      Age: <span className="ml-1">{donor.age}</span>
                     </p>
                   </div>
-
                   <div className="flex space-x-3">
                     <Button 
                       className="bg-green-600 hover:bg-green-700 text-white" 
-                      onClick={() => handleApproval(donor.registeredBy)}
-                      disabled={processingDonor === donor.registeredBy}
+                      onClick={() => handleApproval(donor._id)}
+                      disabled={processingDonor === donor._id}
                     >
-                      {processingDonor === donor.registeredBy ? "Approving..." : "Approve Donor"}
+                      {processingDonor === donor._id ? "Approving..." : "Approve Donor"}
                     </Button>
                   </div>
                 </CardContent>
