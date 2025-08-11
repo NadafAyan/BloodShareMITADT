@@ -43,6 +43,7 @@
     "clsx": "^2.1.1",
     "cmdk": "latest",
     "embla-carousel-react": "latest",
+    "ethers": "^6.15.0",
     "input-otp": "latest",
     "jiti": "latest",
     "less": "latest",
