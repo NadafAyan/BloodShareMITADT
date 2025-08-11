@@ -1,4 +1,3 @@
-// DonorsPage.jsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -29,6 +28,8 @@ import {
   User,
   Droplet,
   Filter,
+  Mail,
+  X,
 } from "lucide-react";
 
 export default function DonorsPage() {
@@ -40,6 +41,8 @@ export default function DonorsPage() {
   const [donors, setDonors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showContactModal, setShowContactModal] = useState(false);
+  const [selectedDonor, setSelectedDonor] = useState(null);
 
   const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
   const cities = [
@@ -91,6 +94,18 @@ export default function DonorsPage() {
       (!searchFilters.emergencyAvailability || donor.emergencyAvailability === (searchFilters.emergencyAvailability === 'true'))
     );
   });
+  
+  // Function to open the contact modal
+  const handleContactClick = (donor) => {
+    setSelectedDonor(donor);
+    setShowContactModal(true);
+  };
+  
+  // Function to close the contact modal
+  const handleCloseModal = () => {
+    setShowContactModal(false);
+    setSelectedDonor(null);
+  };
 
   if (loading) {
     return (
@@ -110,7 +125,26 @@ export default function DonorsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-50">
-      {/* ... (Header and filter sections remain the same, but now use the local state) ... */}
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b">
+        <div className="container mx-auto px-4 py-4">
+          <nav className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Heart className="h-8 w-8 text-red-600" />
+              <span className="text-2xl font-bold text-gray-900">BloodShare</span>
+            </div>
+            <Link
+              to="/"
+              className="flex items-center space-x-2 text-gray-600 hover:text-red-600 transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>Back to Home</span>
+            </Link>
+          </nav>
+        </div>
+      </header>
+
+      {/* Filters */}
       <section className="py-8 px-4 bg-white border-b">
         <div className="container mx-auto">
           <div className="max-w-4xl mx-auto">
@@ -259,8 +293,10 @@ export default function DonorsPage() {
                         </div>
                         <div className="mt-4 md:mt-0 md:ml-6">
                           <div className="flex flex-col space-y-2">
-                            {/* Assuming a contact button would be added here */}
-                            <Button className="bg-red-600 hover:bg-red-700 text-white">
+                            <Button 
+                                className="bg-red-600 hover:bg-red-700 text-white"
+                                onClick={() => handleContactClick(donor)}
+                            >
                               <Phone className="h-4 w-4 mr-2" />
                               Contact Donor
                             </Button>
@@ -290,6 +326,44 @@ export default function DonorsPage() {
           </div>
         </div>
       </section>
+
+      {/* Contact Modal */}
+      {showContactModal && selectedDonor && (
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50">
+          <Card className="max-w-md w-full bg-white rounded-xl shadow-2xl animate-fade-in">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-2xl font-bold text-red-600">
+                Contact {selectedDonor.fullName}
+              </CardTitle>
+              <Button variant="ghost" size="icon" onClick={handleCloseModal}>
+                <X className="h-6 w-6 text-gray-500 hover:text-gray-700 transition-colors" />
+              </Button>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
+              <p className="text-gray-600 text-lg font-medium">
+                Here are the contact details for the donor.
+              </p>
+              <div className="flex items-center space-x-4 bg-gray-100 p-4 rounded-lg">
+                <Phone className="h-6 w-6 text-red-600" />
+                <a href={`tel:${selectedDonor.phoneNumber}`} className="text-xl font-semibold text-gray-800 hover:underline">
+                  {selectedDonor.phoneNumber}
+                </a>
+              </div>
+              <div className="flex items-center space-x-4 bg-gray-100 p-4 rounded-lg">
+                <Mail className="h-6 w-6 text-red-600" />
+                <a href={`mailto:${selectedDonor.email}`} className="text-lg font-semibold text-gray-800 hover:underline break-all">
+                  {selectedDonor.email}
+                </a>
+              </div>
+              <div className="flex justify-end pt-4">
+                <Button className="bg-red-600 hover:bg-red-700" onClick={handleCloseModal}>
+                  Close
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

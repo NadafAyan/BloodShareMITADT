@@ -1,0 +1,2 @@
+earlier you were asking about how are we planning to scale this project
+Our most important next step for scaling is to establish official partnerships. By giving hospitals and blood banks a verified status on BloodShare, they can directly post their needs. This allows them to schedule blood camps and make emergency requests directly through our platform, which is crucial for building credibility and integrating our solution into the existing healthcare infrastructure.
