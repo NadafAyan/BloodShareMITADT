@@ -152,7 +152,7 @@ export default function EmergencyPage() {
                     <div className="text-blue-800">
                       <p className="font-semibold">Notification Summary:</p>
                       <p className="text-sm mt-1">
-                        {submissionDetails.successful} out of {submissionDetails.total} available donors have been notified via WhatsApp.
+                        {submissionDetails.successful} out of {submissionDetails.total} approved donors nationwide have been notified via WhatsApp.
                       </p>
                       {submissionDetails.compatibleDonorsNotified > 0 && (
                         <p className="text-sm text-green-600 mt-1">
@@ -237,7 +237,7 @@ export default function EmergencyPage() {
             <CardHeader className="text-center">
               <CardTitle className="text-3xl font-bold text-gray-900">Emergency Blood Request</CardTitle>
               <CardDescription className="text-lg text-gray-600">
-                Fill out this form to notify ALL available blood donors in your city via WhatsApp
+                Fill out this form to notify all approved donors nationwide via WhatsApp
               </CardDescription>
             </CardHeader>
             <CardContent>

@@ -80,24 +80,29 @@ app.post('/api/emergency', async (req, res) => {
             return res.status(400).json({ message: "Missing required fields." });
         }
 
-        // 2. Find all approved donors who are available for emergencies (all donors in the city)
-        const allApprovedDonors = await Donor.find({ 
-            is_approved: true, 
-            emergencyAvailability: true, 
-            city: city 
+        // 2. Find all approved donors (only filter by approval status)
+        const approvedDonors = await Donor.find({ 
+            is_approved: true
+        });
+
+        console.log(`🔍 Found ${approvedDonors.length} approved donors across all cities`);
+        
+        // Debug: Log all approved donors
+        console.log('📋 All approved donors:');
+        approvedDonors.forEach((donor, index) => {
+            console.log(`${index + 1}. ${donor.fullName} - ${donor.phoneNumber} - ${donor.bloodGroup} - ${donor.city} - Approved: ${donor.is_approved}`);
         });
 
         // Also get compatible blood group donors for priority messaging
         const compatibleBloodGroups = getCompatibleBloodGroups(bloodGroup);
-        const compatibleDonors = allApprovedDonors.filter(donor => 
+        const compatibleDonors = approvedDonors.filter(donor => 
             compatibleBloodGroups.includes(donor.bloodGroup)
         );
 
-        console.log(`🔍 Found ${allApprovedDonors.length} total emergency-available donors in ${city}`);
         console.log(`🩸 Found ${compatibleDonors.length} compatible blood group donors (${compatibleBloodGroups.join(', ')})`);
 
-        if (allApprovedDonors.length === 0) {
-            return res.status(404).json({ message: "No emergency-available donors found in this city." });
+        if (approvedDonors.length === 0) {
+            return res.status(404).json({ message: "No approved donors found." });
         }
 
         // 3. Prepare the WhatsApp message template
@@ -147,16 +152,16 @@ Your help can save a life! ❤️
 
 - BloodShare Team`;
 
-        console.log('📝 Messages prepared for compatible and general donors');
+        console.log('📝 Messages prepared for all approved donors across all cities');
 
-        // 4. Send messages to each approved donor with individual error handling
+        // 4. Send messages to all approved donors with individual error handling
         const messageResults = [];
         let successCount = 0;
         let failCount = 0;
 
-        for (const donor of allApprovedDonors) {
+        for (const donor of approvedDonors) {
             try {
-                console.log(`📞 Attempting to send WhatsApp to donor: ${donor.fullName} (${donor.phoneNumber}) - Blood Group: ${donor.bloodGroup}`);
+                console.log(`📞 Attempting to send WhatsApp to: ${donor.fullName} (${donor.phoneNumber}) - Blood Group: ${donor.bloodGroup} - City: ${donor.city}`);
                 
                 const formattedPhone = formatPhoneForWhatsApp(donor.phoneNumber);
                 console.log(`📱 Formatted phone: ${formattedPhone}`);
@@ -173,11 +178,12 @@ Your help can save a life! ❤️
                     body: messageBody
                 });
 
-                console.log(`✅ ${isCompatible ? 'PRIORITY' : 'GENERAL'} message sent to ${donor.fullName}. SID: ${message.sid}`);
+                console.log(`✅ ${isCompatible ? 'PRIORITY' : 'GENERAL'} message sent to ${donor.fullName} in ${donor.city}. SID: ${message.sid}`);
                 messageResults.push({
                     donor: donor.fullName,
                     phone: donor.phoneNumber,
                     bloodGroup: donor.bloodGroup,
+                    city: donor.city,
                     compatible: isCompatible,
                     status: 'success',
                     sid: message.sid
@@ -185,11 +191,12 @@ Your help can save a life! ❤️
                 successCount++;
 
             } catch (error) {
-                console.error(`❌ Failed to send message to ${donor.fullName} (${donor.phoneNumber}):`, error);
+                console.error(`❌ Failed to send message to ${donor.fullName} in ${donor.city} (${donor.phoneNumber}):`, error);
                 messageResults.push({
                     donor: donor.fullName,
                     phone: donor.phoneNumber,
                     bloodGroup: donor.bloodGroup,
+                    city: donor.city,
                     status: 'failed',
                     error: error.message,
                     code: error.code
@@ -213,9 +220,9 @@ Your help can save a life! ❤️
         }
 
         res.status(200).json({ 
-            message: `Emergency request sent successfully. ${successCount}/${allApprovedDonors.length} emergency-available donors notified.`,
+            message: `Emergency request sent successfully. ${successCount}/${approvedDonors.length} approved donors notified nationwide.`,
             results: {
-                total: allApprovedDonors.length,
+                total: approvedDonors.length,
                 successful: successCount,
                 failed: failCount,
                 compatibleDonorsNotified: compatibleNotified,
@@ -303,6 +310,35 @@ app.put('/api/donors/:id/approve', async (req, res) => {
     } catch (error) {
         console.error('❌ Error approving donor:', error);
         res.status(500).json({ message: 'Failed to approve donor.' });
+    }
+});
+
+// --- DEBUG: Endpoint to check all donors in database ---
+app.get('/api/debug/donors', async (req, res) => {
+    try {
+        const allDonors = await Donor.find({});
+        const approvedDonors = await Donor.find({ is_approved: true });
+        
+        console.log('🔍 DEBUG: All donors in database:');
+        allDonors.forEach((donor, index) => {
+            console.log(`${index + 1}. ${donor.fullName} - ${donor.phoneNumber} - ${donor.city} - Approved: ${donor.is_approved} - Emergency: ${donor.emergencyAvailability}`);
+        });
+        
+        res.json({
+            total: allDonors.length,
+            approved: approvedDonors.length,
+            donors: allDonors.map(donor => ({
+                name: donor.fullName,
+                phone: donor.phoneNumber,
+                city: donor.city,
+                bloodGroup: donor.bloodGroup,
+                approved: donor.is_approved,
+                emergencyAvailable: donor.emergencyAvailability
+            }))
+        });
+    } catch (error) {
+        console.error('❌ Error fetching donors for debug:', error);
+        res.status(500).json({ message: 'Failed to fetch donors.' });
     }
 });
 
