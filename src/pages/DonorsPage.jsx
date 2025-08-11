@@ -25,6 +25,7 @@ export default function DonorsPage() {
     if (data) setDonors(data);
   }, [data]);
 
+  console.log(data);
   if (isLoading) return <p className="text-red-600 text-lg">Loading...</p>;
   if (error) return <p className="text-red-600 text-lg">Error loading donors.</p>;
 
