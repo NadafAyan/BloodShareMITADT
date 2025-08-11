@@ -1,10 +1,38 @@
-import { Link } from "react-router-dom"
-import { Button } from "../components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
-import { Heart, Users, MapPin, Calendar,LogOut } from "lucide-react"
-//import LogoutButton from "../components/ui/logout"
+import { Link } from "react-router-dom";
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import { Heart, Users, MapPin, Calendar, LogOut } from "lucide-react";
+import { useState, useEffect } from 'react';
+import { client } from "../app/clinet";
+import { useActiveAccount, ConnectButton } from "thirdweb/react";
+
+
+// This is the address that will be considered the admin.
+// **IMPORTANT:** Replace this with your specific MetaMask account address.
+const adminAddress = "0xA2ea32d7940870794E6746B9b20A97fD399FF898".toLowerCase();
 
 export default function HomePage() {
+  // Use the thirdweb hook to get the active account
+  const activeAccount = useActiveAccount();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Use a useEffect hook to check if the connected account is the admin
+  // whenever the activeAccount changes.
+  useEffect(() => {
+    if (activeAccount) {
+      if (activeAccount.address.toLowerCase() === adminAddress) {
+        setIsAdmin(true);
+        console.log("Admin account connected.");
+      } else {
+        setIsAdmin(false);
+        console.log("Non-admin account connected.");
+      }
+    } else {
+      setIsAdmin(false);
+      console.log("No account connected.");
+    }
+  }, [activeAccount]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-50">
       {/* Header */}
@@ -28,6 +56,14 @@ export default function HomePage() {
               <Link to="/camps" className="text-gray-600 hover:text-red-600 transition-colors">
                 Blood Camps
               </Link>
+              {/* Conditional rendering for Admin Approval link */}
+              {isAdmin && (
+                <Link to="/AdminApproval" className="text-white py-1 px-4 bg-red-600 rounded transition-colors">
+                  Admin Approval
+                </Link>
+              )}
+              {/* The ConnectButton from thirdweb handles connecting and displaying the account */}
+              <ConnectButton client={client} className="py-1 px-4 bg-black text-white"/>
             </div>
           </nav>
         </div>
@@ -136,5 +172,5 @@ export default function HomePage() {
         </div>
       </footer>
     </div>
-  )
+  );
 }
