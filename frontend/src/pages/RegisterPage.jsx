@@ -36,7 +36,8 @@ const contract = getContract({
 });
 
 export default function RegisterPage() {
-  // State to manage form data, including new fields from the image
+  // State to manage form data. File inputs are not stored in state as they are not
+  // being sent to the database according to your schema.
   const [formData, setFormData] = useState({
     fullName: "",
     age: "",
@@ -46,9 +47,6 @@ export default function RegisterPage() {
     phoneNumber: "",
     emergencyContact: "",
     medicalCondition: "",
-    proofOfIdentity: null,
-    drivingLicense: null,
-    bloodReport: null,
     emergencyAvailability: false,
     agreeToTerms: false,
   });
@@ -56,7 +54,7 @@ export default function RegisterPage() {
   // State for form validation errors and submission status
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [message, setMessage] = useState({ text: "", type: "" }); // Replaces `alert()` with a state-based message
+  const [message, setMessage] = useState({ text: "", type: "" });
 
   // Static data for dropdowns
   const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
@@ -76,10 +74,9 @@ export default function RegisterPage() {
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
-    // Clear any previous messages
     setMessage({ text: "", type: "" });
   };
-
+  
   // Validation logic for the entire form
   const validateForm = () => {
     const newErrors = {};
@@ -92,9 +89,7 @@ export default function RegisterPage() {
     if (!formData.email) newErrors.email = "Email is required";
     if (!formData.phoneNumber) newErrors.phoneNumber = "Phone number is required";
     if (!formData.emergencyContact) newErrors.emergencyContact = "Emergency contact is required";
-    if (!formData.proofOfIdentity) newErrors.proofOfIdentity = "Proof of identity is required";
-    if (!formData.drivingLicense) newErrors.drivingLicense = "Driving license is required";
-    if (!formData.bloodReport) newErrors.bloodReport = "Blood report is required";
+    // File upload validation is removed since the data is not being saved in the database
     if (!formData.agreeToTerms) newErrors.agreeToTerms = "You must agree to the terms and conditions";
 
     setErrors(newErrors);
@@ -113,11 +108,28 @@ export default function RegisterPage() {
     if (!validateForm()) return;
 
     setIsSubmitting(true);
-    setMessage({ text: "", type: "" }); // Clear previous message
+    setMessage({ text: "", type: "" });
 
     try {
-      // Prepare the contract call with the required parameters.
-      // Note: File uploads are not sent to the blockchain in this transaction.
+      // 1. Save data to the PostgreSQL database via a backend API
+      const dbResponse = await fetch('http://localhost:3001/api/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          walletAddress: account.address,
+          ...formData,
+        }),
+      });
+
+      if (!dbResponse.ok) {
+        throw new Error("Failed to save data to the database.");
+      }
+      
+      console.log("Data successfully saved to database.");
+
+      // 2. Prepare and send the transaction to the blockchain
       const transaction = prepareContractCall({
         contract,
         method: "function registerDonor(string memory _name, uint8 _age, string memory _bloodGroup, string memory _city)",
@@ -129,21 +141,22 @@ export default function RegisterPage() {
         ],
       });
 
-      console.log("Prepared transaction:", transaction);
+      console.log("Prepared blockchain transaction:", transaction);
 
       sendTransaction(transaction, {
         onSuccess: (result) => {
           console.log("Transaction successful:", result);
-          setMessage({ text: "Registration successful! Your request is pending admin approval.", type: "success" });
+          setMessage({ text: "Registration successful! Data saved to database and request submitted to blockchain.", type: "success" });
           navigate("/camps");
         },
         onError: (error) => {
-          console.error("Transaction failed:", error);
-          setMessage({ text: "Registration failed. Please try again.", type: "error" });
+          console.error("Blockchain transaction failed:", error);
+          setMessage({ text: "Blockchain transaction failed. Please check your wallet.", type: "error" });
         },
       });
+
     } catch (error) {
-      console.error("Error preparing transaction:", error);
+      console.error("Error during registration:", error);
       setMessage({ text: "Something went wrong. Please try again.", type: "error" });
     } finally {
       setIsSubmitting(false);
@@ -325,38 +338,32 @@ export default function RegisterPage() {
                       </div>
                     </div>
                     
-                    {/* Three-column grid for file uploads */}
+                    {/* Three-column grid for file uploads - Removed file-related logic */}
                     <div className="space-y-4">
                       <h3 className="text-xl font-semibold text-gray-900 pt-4">
                         Document Uploads
                       </h3>
                       <div className="grid md:grid-cols-3 gap-4">
                         <div className="space-y-2">
-                          <Label>Upload proof of identity *</Label>
+                          <Label htmlFor="proofOfIdentity">Upload proof of identity</Label>
                           <Input
+                            id="proofOfIdentity"
                             type="file"
-                            onChange={(e) => handleInputChange("proofOfIdentity", e.target.files[0])}
-                            className={errors.proofOfIdentity ? "border-red-500" : ""}
                           />
-                          {errors.proofOfIdentity && <p className="text-sm text-red-500">{errors.proofOfIdentity}</p>}
                         </div>
                         <div className="space-y-2">
-                          <Label>Upload Driving License *</Label>
+                          <Label htmlFor="drivingLicense">Upload Driving License</Label>
                           <Input
+                            id="drivingLicense"
                             type="file"
-                            onChange={(e) => handleInputChange("drivingLicense", e.target.files[0])}
-                            className={errors.drivingLicense ? "border-red-500" : ""}
                           />
-                          {errors.drivingLicense && <p className="text-sm text-red-500">{errors.drivingLicense}</p>}
                         </div>
                         <div className="space-y-2">
-                          <Label>Upload Blood report *</Label>
+                          <Label htmlFor="bloodReport">Upload Blood report</Label>
                           <Input
+                            id="bloodReport"
                             type="file"
-                            onChange={(e) => handleInputChange("bloodReport", e.target.files[0])}
-                            className={errors.bloodReport ? "border-red-500" : ""}
                           />
-                          {errors.bloodReport && <p className="text-sm text-red-500">{errors.bloodReport}</p>}
                         </div>
                       </div>
                     </div>
