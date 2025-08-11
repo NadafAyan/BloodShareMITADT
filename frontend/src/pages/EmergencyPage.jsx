@@ -8,7 +8,7 @@ import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
 import { Textarea } from "../components/ui/textarea"
-import { Heart, ArrowLeft, AlertTriangle, Phone, MapPin } from "lucide-react"
+import { Heart, ArrowLeft, AlertTriangle, Phone, MapPin, CheckCircle } from "lucide-react"
 
 export default function EmergencyPage() {
   const [formData, setFormData] = useState({
@@ -25,6 +25,9 @@ export default function EmergencyPage() {
 
   const [errors, setErrors] = useState({})
   const [isSubmitted, setIsSubmitted] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [message, setMessage] = useState({ text: "", type: "" })
+  const [submissionDetails, setSubmissionDetails] = useState(null)
 
   const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]
   const cities = ["Mumbai", "Delhi", "Bangalore", "Chennai", "Kolkata", "Hyderabad", "Pune", "Ahmedabad"]
@@ -39,17 +42,25 @@ export default function EmergencyPage() {
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }))
     }
+    setMessage({ text: "", type: "" })
   }
 
   const validateForm = () => {
     const newErrors = {}
-
+    
     if (!formData.patientName.trim()) newErrors.patientName = "Patient name is required"
     if (!formData.contactPerson.trim()) newErrors.contactPerson = "Contact person is required"
-    if (!formData.phone.trim()) newErrors.phone = "Phone number is required"
-    else if (!/^\d{10}$/.test(formData.phone)) newErrors.phone = "Phone number must be 10 digits"
+    if (!formData.phone.trim()) {
+      newErrors.phone = "Phone number is required"
+    } else if (!/^\d{10}$/.test(formData.phone.replace(/\D/g, ''))) {
+      newErrors.phone = "Phone number must be 10 digits"
+    }
     if (!formData.bloodGroup) newErrors.bloodGroup = "Blood group is required"
-    if (!formData.unitsNeeded) newErrors.unitsNeeded = "Units needed is required"
+    if (!formData.unitsNeeded) {
+      newErrors.unitsNeeded = "Units needed is required"
+    } else if (parseInt(formData.unitsNeeded) < 1 || parseInt(formData.unitsNeeded) > 10) {
+      newErrors.unitsNeeded = "Units needed must be between 1 and 10"
+    }
     if (!formData.hospital.trim()) newErrors.hospital = "Hospital name is required"
     if (!formData.city) newErrors.city = "City is required"
     if (!formData.urgencyLevel) newErrors.urgencyLevel = "Urgency level is required"
@@ -58,18 +69,58 @@ export default function EmergencyPage() {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    if (validateForm()) {
-      console.log("Emergency request submitted:", formData)
-      setIsSubmitted(true)
+    if (!validateForm()) return
+
+    setIsSubmitting(true)
+    setMessage({ text: "", type: "" })
+
+    try {
+      console.log('Submitting emergency request:', formData)
+      
+      const response = await fetch('http://localhost:3001/api/emergency', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      })
+
+      const result = await response.json()
+      console.log('Response:', response.status, result)
+
+      if (response.ok) {
+        console.log("Emergency request success:", result)
+        setSubmissionDetails(result.results)
+        setIsSubmitted(true)
+      } else {
+        console.error("Emergency request failed:", result)
+        let errorMessage = result.message || "Failed to submit emergency request."
+        
+        // Handle specific error cases
+        if (response.status === 404) {
+          errorMessage = `No available donors found in ${formData.city}. Try expanding to nearby cities or contact blood banks directly.`
+        } else if (response.status === 500) {
+          errorMessage = "Server error occurred. Please try again or contact support."
+        }
+        
+        setMessage({ text: errorMessage, type: "error" })
+      }
+    } catch (error) {
+      console.error("Error submitting form:", error)
+      setMessage({ 
+        text: "Network error. Please check your connection and try again.", 
+        type: "error" 
+      })
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
   if (isSubmitted) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-50">
-        {/* Header */}
         <header className="bg-white shadow-sm border-b">
           <div className="container mx-auto px-4 py-4">
             <nav className="flex items-center justify-between">
@@ -84,20 +135,49 @@ export default function EmergencyPage() {
             </nav>
           </div>
         </header>
-
-        {/* Success Message */}
         <section className="py-20 px-4">
           <div className="container mx-auto max-w-2xl text-center">
             <Card className="shadow-xl">
               <CardContent className="py-12">
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Heart className="h-8 w-8 text-green-600" />
+                  <CheckCircle className="h-8 w-8 text-green-600" />
                 </div>
                 <h2 className="text-3xl font-bold text-gray-900 mb-4">Request Submitted Successfully!</h2>
-                <p className="text-lg text-gray-600 mb-8">
-                  Your emergency blood request has been sent to all available donors in your area. You should receive
-                  calls from potential donors shortly.
+                <p className="text-lg text-gray-600 mb-4">
+                  Your emergency blood request has been processed.
                 </p>
+                
+                {submissionDetails && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <div className="text-blue-800">
+                      <p className="font-semibold">Notification Summary:</p>
+                      <p className="text-sm mt-1">
+                        {submissionDetails.successful} out of {submissionDetails.total} available donors have been notified via WhatsApp.
+                      </p>
+                      {submissionDetails.compatibleDonorsNotified > 0 && (
+                        <p className="text-sm text-green-600 mt-1">
+                          🩸 {submissionDetails.compatibleDonorsNotified} compatible blood group donors received priority notifications.
+                        </p>
+                      )}
+                      {submissionDetails.generalDonorsNotified > 0 && (
+                        <p className="text-sm text-blue-600 mt-1">
+                          📢 {submissionDetails.generalDonorsNotified} other donors were asked to share with their network.
+                        </p>
+                      )}
+                      {submissionDetails.failed > 0 && (
+                        <p className="text-sm text-orange-600 mt-1">
+                          ⚠️ {submissionDetails.failed} notifications couldn't be delivered.
+                        </p>
+                      )}
+                      {submissionDetails.compatibleBloodGroups && (
+                        <p className="text-sm text-gray-600 mt-2">
+                          Compatible blood groups: {submissionDetails.compatibleBloodGroups.join(', ')}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
                   <div className="flex items-center space-x-2 text-yellow-800">
                     <AlertTriangle className="h-5 w-5" />
@@ -107,6 +187,7 @@ export default function EmergencyPage() {
                     Please keep your phone available. Donors will contact you directly at {formData.phone}
                   </p>
                 </div>
+                
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Button asChild className="bg-red-600 hover:bg-red-700">
                     <Link to="/donors">View Available Donors</Link>
@@ -125,7 +206,6 @@ export default function EmergencyPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-50">
-      {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="container mx-auto px-4 py-4">
           <nav className="flex items-center justify-between">
@@ -140,8 +220,7 @@ export default function EmergencyPage() {
           </nav>
         </div>
       </header>
-
-      {/* Emergency Alert */}
+      
       <section className="py-6 px-4 bg-red-600">
         <div className="container mx-auto">
           <div className="flex items-center justify-center space-x-3 text-white">
@@ -152,22 +231,19 @@ export default function EmergencyPage() {
         </div>
       </section>
 
-      {/* Emergency Form */}
       <section className="py-12 px-4">
         <div className="container mx-auto max-w-2xl">
           <Card className="shadow-xl">
             <CardHeader className="text-center">
               <CardTitle className="text-3xl font-bold text-gray-900">Emergency Blood Request</CardTitle>
               <CardDescription className="text-lg text-gray-600">
-                Fill out this form to request blood donors immediately
+                Fill out this form to notify ALL available blood donors in your city via WhatsApp
               </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Patient Information */}
                 <div className="space-y-4">
                   <h3 className="text-xl font-semibold text-gray-900">Patient Information</h3>
-
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="patientName">Patient Name *</Label>
@@ -176,10 +252,10 @@ export default function EmergencyPage() {
                         value={formData.patientName}
                         onChange={(e) => handleInputChange("patientName", e.target.value)}
                         className={errors.patientName ? "border-red-500" : ""}
+                        placeholder="Enter patient's full name"
                       />
                       {errors.patientName && <p className="text-sm text-red-500">{errors.patientName}</p>}
                     </div>
-
                     <div className="space-y-2">
                       <Label htmlFor="contactPerson">Contact Person *</Label>
                       <Input
@@ -187,11 +263,11 @@ export default function EmergencyPage() {
                         value={formData.contactPerson}
                         onChange={(e) => handleInputChange("contactPerson", e.target.value)}
                         className={errors.contactPerson ? "border-red-500" : ""}
+                        placeholder="Name of person to contact"
                       />
                       {errors.contactPerson && <p className="text-sm text-red-500">{errors.contactPerson}</p>}
                     </div>
                   </div>
-
                   <div className="space-y-2">
                     <Label htmlFor="phone">Contact Phone Number *</Label>
                     <div className="relative">
@@ -201,17 +277,17 @@ export default function EmergencyPage() {
                         value={formData.phone}
                         onChange={(e) => handleInputChange("phone", e.target.value)}
                         className={`pl-10 ${errors.phone ? "border-red-500" : ""}`}
-                        placeholder="Enter 10-digit phone number"
+                        placeholder="9876543210"
+                        maxLength="10"
                       />
                     </div>
                     {errors.phone && <p className="text-sm text-red-500">{errors.phone}</p>}
+                    <p className="text-sm text-gray-500">Donors will contact you on this number</p>
                   </div>
                 </div>
-
-                {/* Blood Requirements */}
+                
                 <div className="space-y-4">
                   <h3 className="text-xl font-semibold text-gray-900">Blood Requirements</h3>
-
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Blood Group Required *</Label>
@@ -232,7 +308,6 @@ export default function EmergencyPage() {
                       </Select>
                       {errors.bloodGroup && <p className="text-sm text-red-500">{errors.bloodGroup}</p>}
                     </div>
-
                     <div className="space-y-2">
                       <Label htmlFor="unitsNeeded">Units Needed *</Label>
                       <Input
@@ -243,11 +318,11 @@ export default function EmergencyPage() {
                         value={formData.unitsNeeded}
                         onChange={(e) => handleInputChange("unitsNeeded", e.target.value)}
                         className={errors.unitsNeeded ? "border-red-500" : ""}
+                        placeholder="1-10 units"
                       />
                       {errors.unitsNeeded && <p className="text-sm text-red-500">{errors.unitsNeeded}</p>}
                     </div>
                   </div>
-
                   <div className="space-y-2">
                     <Label>Urgency Level *</Label>
                     <Select
@@ -255,7 +330,7 @@ export default function EmergencyPage() {
                       onValueChange={(value) => handleInputChange("urgencyLevel", value)}
                     >
                       <SelectTrigger className={errors.urgencyLevel ? "border-red-500" : ""}>
-                        <SelectValue placeholder="Select urgency level" />
+                        <SelectValue placeholder="How urgent is this request?" />
                       </SelectTrigger>
                       <SelectContent>
                         {urgencyLevels.map((level) => (
@@ -268,13 +343,11 @@ export default function EmergencyPage() {
                     {errors.urgencyLevel && <p className="text-sm text-red-500">{errors.urgencyLevel}</p>}
                   </div>
                 </div>
-
-                {/* Location Information */}
+                
                 <div className="space-y-4">
                   <h3 className="text-xl font-semibold text-gray-900">Location Information</h3>
-
                   <div className="space-y-2">
-                    <Label htmlFor="hospital">Hospital Name *</Label>
+                    <Label htmlFor="hospital">Hospital Name & Address *</Label>
                     <div className="relative">
                       <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                       <Input
@@ -282,17 +355,16 @@ export default function EmergencyPage() {
                         value={formData.hospital}
                         onChange={(e) => handleInputChange("hospital", e.target.value)}
                         className={`pl-10 ${errors.hospital ? "border-red-500" : ""}`}
-                        placeholder="Enter hospital name and address"
+                        placeholder="Hospital name and complete address"
                       />
                     </div>
                     {errors.hospital && <p className="text-sm text-red-500">{errors.hospital}</p>}
                   </div>
-
                   <div className="space-y-2">
                     <Label>City *</Label>
                     <Select value={formData.city} onValueChange={(value) => handleInputChange("city", value)}>
                       <SelectTrigger className={errors.city ? "border-red-500" : ""}>
-                        <SelectValue placeholder="Select city" />
+                        <SelectValue placeholder="Select city where hospital is located" />
                       </SelectTrigger>
                       <SelectContent>
                         {cities.map((city) => (
@@ -305,25 +377,43 @@ export default function EmergencyPage() {
                     {errors.city && <p className="text-sm text-red-500">{errors.city}</p>}
                   </div>
                 </div>
-
-                {/* Additional Information */}
+                
                 <div className="space-y-4">
                   <h3 className="text-xl font-semibold text-gray-900">Additional Information</h3>
-
                   <div className="space-y-2">
-                    <Label htmlFor="additionalInfo">Additional Details</Label>
+                    <Label htmlFor="additionalInfo">Additional Details (Optional)</Label>
                     <Textarea
                       id="additionalInfo"
                       value={formData.additionalInfo}
                       onChange={(e) => handleInputChange("additionalInfo", e.target.value)}
-                      placeholder="Any additional information that might help donors (e.g., specific requirements, timing, etc.)"
+                      placeholder="Any specific requirements, timing constraints, or other important details for donors"
                       rows={4}
                     />
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full bg-red-600 hover:bg-red-700 text-white py-3 text-lg">
-                  Submit Emergency Request
+                {message.text && (
+                  <div className={`p-4 rounded-md ${message.type === 'success' ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-red-100 text-red-700 border border-red-200'}`}>
+                    <div className="flex items-start space-x-2">
+                      <AlertTriangle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                      <span>{message.text}</span>
+                    </div>
+                  </div>
+                )}
+                
+                <Button 
+                  type="submit" 
+                  className="w-full bg-red-600 hover:bg-red-700 text-white py-3 text-lg font-semibold"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <span className="flex items-center space-x-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Sending Request...</span>
+                    </span>
+                  ) : (
+                    "Submit Emergency Request"
+                  )}
                 </Button>
               </form>
             </CardContent>

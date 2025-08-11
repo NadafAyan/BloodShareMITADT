@@ -1,0 +1,3 @@
+61K3H1SX2XFBNRGUYGJDUC97
+const accountSid = "ACb6a3223d0de34fe4c5ddb8bc137bc9cc"; // Store securely in environment variables
+const authToken = "037505d8639ef4a0eb67be5cdaacb101"; 
