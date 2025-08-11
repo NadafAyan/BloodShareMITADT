@@ -7,9 +7,7 @@ const app = express();
 const port = 3001; // Use a different port than your React app
 
 // --- Middleware ---
-// Enable CORS for your React app to make requests.
 app.use(cors());
-// Parse incoming JSON requests.
 app.use(bodyParser.json());
 
 // --- PostgreSQL Database Configuration ---
@@ -32,28 +30,34 @@ async function connectToDb() {
 connectToDb();
 
 // --- API Endpoint for Donor Registration ---
-// This endpoint receives donor data from the React frontend and saves it to the database.
 app.post('/api/register', async (req, res) => {
-  const { walletAddress, fullName, age, bloodGroup, city, email, phoneNumber, emergencyContact, medicalCondition } = req.body;
+  const { 
+    walletAddress, 
+    fullName, 
+    age, 
+    bloodGroup, 
+    city, 
+    email, 
+    phoneNumber, 
+    emergencyContact, 
+    medicalCondition,
+    emergencyAvailability
+  } = req.body;
   
-  // A real-world application would store file uploads on a service like IPFS or S3
-  // and store the reference URL in the database.
-  
+  // The INSERT query is simplified to add a new row, as there's no unique
+  // constraint on wallet_address for the ON CONFLICT clause to target.
   const insertQuery = `
-    INSERT INTO donors (wallet_address, full_name, age, blood_group, city, email, phone_number, emergency_contact, medical_condition, is_approved)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, FALSE)
-    ON CONFLICT (wallet_address) DO UPDATE SET
-      full_name = EXCLUDED.full_name,
-      age = EXCLUDED.age,
-      blood_group = EXCLUDED.blood_group,
-      city = EXCLUDED.city,
-      email = EXCLUDED.email,
-      phone_number = EXCLUDED.phone_number,
-      emergency_contact = EXCLUDED.emergency_contact,
-      medical_condition = EXCLUDED.medical_condition
+    INSERT INTO donors (
+      wallet_address, full_name, age, blood_group, city, email, phone_number,
+      emergency_contact, medical_condition, emergency_availability, is_approved
+    )
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, FALSE)
     RETURNING *
   `;
-  const values = [walletAddress, fullName, age, bloodGroup, city, email, phoneNumber, emergencyContact, medicalCondition];
+  const values = [
+    walletAddress, fullName, age, bloodGroup, city, email, phoneNumber,
+    emergencyContact, medicalCondition, emergencyAvailability
+  ];
 
   try {
     const result = await dbClient.query(insertQuery, values);

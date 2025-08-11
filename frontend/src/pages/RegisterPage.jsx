@@ -86,33 +86,6 @@ export default function RegisterPage() {
     else if (formData.age < 18 || formData.age > 65) newErrors.age = "Age must be between 18 and 65";
     if (!formData.bloodGroup) newErrors.bloodGroup = "Blood group is required";
     if (!formData.city) newErrors.city = "City is required";
-
-    // Email validation using a basic regex
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!formData.email) {
-      newErrors.email = "Email is required";
-    } else if (!emailRegex.test(formData.email)) {
-      newErrors.email = "Please enter a valid email address";
-    }
-
-    // Phone number validation (10 digits)
-    const phoneRegex = /^\d{10}$/;
-    if (!formData.phoneNumber) {
-      newErrors.phoneNumber = "Phone number is required";
-    } else if (!phoneRegex.test(formData.phoneNumber)) {
-      newErrors.phoneNumber = "Phone number must be exactly 10 digits";
-    }
-
-    // Emergency contact validation (10 digits)
-    if (!formData.emergencyContact) {
-      newErrors.emergencyContact = "Emergency contact is required";
-    } else if (!phoneRegex.test(formData.emergencyContact)) {
-      newErrors.emergencyContact = "Emergency contact must be exactly 10 digits";
-    }
-
-    if (!formData.proofOfIdentity) newErrors.proofOfIdentity = "Proof of identity is required";
-    if (!formData.drivingLicense) newErrors.drivingLicense = "Driving license is required";
-    if (!formData.bloodReport) newErrors.bloodReport = "Blood report is required";
     if (!formData.email) newErrors.email = "Email is required";
     if (!formData.phoneNumber) newErrors.phoneNumber = "Phone number is required";
     if (!formData.emergencyContact) newErrors.emergencyContact = "Emergency contact is required";
@@ -372,7 +345,6 @@ export default function RegisterPage() {
                       </h3>
                       <div className="grid md:grid-cols-3 gap-4">
                         <div className="space-y-2">
-                          <Label>Upload ADHAAR ID *</Label>
                           <Label htmlFor="proofOfIdentity">Upload proof of identity</Label>
                           <Input
                             id="proofOfIdentity"

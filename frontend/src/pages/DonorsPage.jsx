@@ -54,6 +54,7 @@ export default function DonorsPage() {
     params: [],
   });
 
+
   const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
   const cities = [
     "Mumbai",
