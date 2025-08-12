@@ -1,0 +1,222 @@
+[
+  {
+    "id": 1,
+    "name": "Apollo Hospital, Navi Mumbai",
+    "address": "Plot 13, 14, 15, Sector 23, CBD Belapur, Navi Mumbai, Maharashtra 400614",
+    "city": "Mumbai",
+    "contact": "022 3350 3350",
+    "location": {
+      "type": "Point",
+      "coordinates": [73.0487, 19.0197]
+    }
+  },
+  {
+    "id": 2,
+    "name": "Lilavati Hospital and Research Centre",
+    "address": "A-791, Bandra Reclamation, Bandra West, Mumbai, Maharashtra 400050",
+    "city": "Mumbai",
+    "contact": "022 2675 1000",
+    "location": {
+      "type": "Point",
+      "coordinates": [72.8277, 19.0543]
+    }
+  },
+  {
+    "id": 3,
+    "name": "Tata Memorial Hospital",
+    "address": "Dr E Borges Rd, Parel, Mumbai, Maharashtra 400012",
+    "city": "Mumbai",
+    "contact": "022 2417 7000",
+    "location": {
+      "type": "Point",
+      "coordinates": [72.8291, 18.9959]
+    }
+  },
+  {
+    "id": 4,
+    "name": "Kokilaben Dhirubhai Ambani Hospital",
+    "address": "Rao Saheb Achutrao Patwardhan Marg, Four Bungalows, Andheri West, Mumbai, Maharashtra 400053",
+    "city": "Mumbai",
+    "contact": "022 3066 5555",
+    "location": {
+      "type": "Point",
+      "coordinates": [72.8202, 19.1206]
+    }
+  },
+  {
+    "id": 5,
+    "name": "Breach Candy Hospital",
+    "address": "60A, Bhulabhai Desai Marg, Cumballa Hill, Mumbai, Maharashtra 400026",
+    "city": "Mumbai",
+    "contact": "022 2367 1888",
+    "location": {
+      "type": "Point",
+      "coordinates": [72.8066, 18.9669]
+    }
+  },
+  {
+    "id": 6,
+    "name": "Jaslok Hospital",
+    "address": "15, Dr G Deshmukh Marg, Pedder Road, Mumbai, Maharashtra 400026",
+    "city": "Mumbai",
+    "contact": "022 6657 3333",
+    "location": {
+      "type": "Point",
+      "coordinates": [72.8055, 18.9774]
+    }
+  },
+  {
+    "id": 7,
+    "name": "P. D. Hinduja Hospital",
+    "address": "Veer Savarkar Marg, Mahim West, Mahim, Mumbai, Maharashtra 400016",
+    "city": "Mumbai",
+    "contact": "022 2444 7777",
+    "location": {
+      "type": "Point",
+      "coordinates": [72.8398, 19.0305]
+    }
+  },
+  {
+    "id": 8,
+    "name": "Fortis Hospital, Kalyan",
+    "address": "Shashikala Lokhande Marg, Bail Bazar, Kalyan West, Mumbai, Maharashtra 421301",
+    "city": "Mumbai",
+    "contact": "0251 350 4400",
+    "location": {
+      "type": "Point",
+      "coordinates": [73.1257, 19.2319]
+    }
+  },
+  {
+    "id": 9,
+    "name": "Wockhardt Hospital, Mumbai Central",
+    "address": "1877, Dr. Anandrao Nair Marg, Agripada, Mumbai Central, Mumbai, Maharashtra 400011",
+    "city": "Mumbai",
+    "contact": "022 6138 2345",
+    "location": {
+      "type": "Point",
+      "coordinates": [72.8219, 18.9754]
+    }
+  },
+  {
+    "id": 10,
+    "name": "SevenHills Hospital",
+    "address": "Marol, Andheri East, Mumbai, Maharashtra 400059",
+    "city": "Mumbai",
+    "contact": "022 6767 6767",
+    "location": {
+      "type": "Point",
+      "coordinates": [72.8719, 19.1084]
+    }
+  },
+  {
+    "id": 11,
+    "name": "Jeevan Jyoti Blood Bank",
+    "address": "25, Shanti Niketan, Near GPO, Pune, Maharashtra 411001",
+    "city": "Pune",
+    "contact": "020 2634 5678",
+    "location": {
+      "type": "Point",
+      "coordinates": [73.8567, 18.5204]
+    }
+  },
+  {
+    "id": 12,
+    "name": "Deenanath Mangeshkar Hospital",
+    "address": "Survey No 27, Erandwane, Pune, Maharashtra 411004",
+    "city": "Pune",
+    "contact": "020 4015 9000",
+    "location": {
+      "type": "Point",
+      "coordinates": [73.8160, 18.5089]
+    }
+  },
+  {
+    "id": 13,
+    "name": "Ruby Hall Clinic, Pune",
+    "address": "40, Sassoon Rd, Sangamvadi, Pune, Maharashtra 411001",
+    "city": "Pune",
+    "contact": "020 6645 5999",
+    "location": {
+      "type": "Point",
+      "coordinates": [73.8767, 18.5290]
+    }
+  },
+  {
+    "id": 14,
+    "name": "Jehangir Hospital",
+    "address": "32, Sassoon Rd, Pune, Maharashtra 411001",
+    "city": "Pune",
+    "contact": "020 6681 1000",
+    "location": {
+      "type": "Point",
+      "coordinates": [73.8789, 18.5262]
+    }
+  },
+  {
+    "id": 15,
+    "name": "Sahyadri Hospital, Deccan Gymkhana",
+    "address": "Plot No. 343, Bhudhar Kargaonkar Path, Pune, Maharashtra 411004",
+    "city": "Pune",
+    "contact": "020 6721 5000",
+    "location": {
+      "type": "Point",
+      "coordinates": [73.8373, 18.5135]
+    }
+  },
+  {
+    "id": 16,
+    "name": "Noble Hospital",
+    "address": "153, Magarpatta City, Hadapsar, Pune, Maharashtra 411013",
+    "city": "Pune",
+    "contact": "020 6628 5000",
+    "location": {
+      "type": "Point",
+      "coordinates": [73.9167, 18.5255]
+    }
+  },
+  {
+    "id": 17,
+    "name": "Inamdar Multispeciality Hospital",
+    "address": "S.No. 15, Fatima Nagar, Kondhwa Rd, Pune, Maharashtra 411040",
+    "city": "Pune",
+    "contact": "020 6689 6789",
+    "location": {
+      "type": "Point",
+      "coordinates": [73.8962, 18.4975]
+    }
+  },
+  {
+    "id": 18,
+    "name": "KEM Hospital, Pune",
+    "address": "489, Rasta Peth, Sardar Moodliar Rd, Pune, Maharashtra 411011",
+    "city": "Pune",
+    "contact": "020 6603 7300",
+    "location": {
+      "type": "Point",
+      "coordinates": [73.8687, 18.5196]
+    }
+  },
+  {
+    "id": 19,
+    "name": "Aditya Birla Memorial Hospital",
+    "address": "Pimpri-Chinchwad Link Rd, Thergaon, Pune, Maharashtra 411033",
+    "city": "Pune",
+    "contact": "020 3071 7500",
+    "location": {
+      "type": "Point",
+      "coordinates": [73.7847, 18.6186]
+    }
+  },
+  {
+    "id": 20,
+    "name": "Sassoon General Hospitals",
+    "address": "Jai Prakash Narayan Rd, Pune, Maharashtra 411001",
+    "city": "Pune",
+    "contact": "020 2612 8000",
+    "location": {
+      "type": "Point",
+      "coordinates": [73.8710, 18.5165]
+    }
+  }
+]
