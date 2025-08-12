@@ -45,10 +45,10 @@ export default function DonorsPage() {
   const [error, setError] = useState(null);
   const [showContactModal, setShowContactModal] = useState(false);
   const [selectedDonor, setSelectedDonor] = useState(null);
-  const [showNearbyHospitalsModal, setShowNearbyHospitalsModal] = useState(false);
-  const [nearbyHospitals, setNearbyHospitals] = useState([]);
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationError, setLocationError] = useState(null);
+  const [showNearbyHospitalsModal, setShowNearbyHospitalsModal] = useState(false);
+  const [nearbyHospitals, setNearbyHospitals] = useState([]);
 
   const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
   const cities = [
@@ -61,6 +61,92 @@ export default function DonorsPage() {
     "Pune",
     "Ahmedabad",
   ];
+
+  // Mock hospital data with coordinates for demonstration
+  const mockHospitals = [
+    {
+      id: 1,
+      name: "Apollo Hospital, Navi Mumbai",
+      address: "Sector 23, CBD Belapur, Navi Mumbai, Maharashtra 400614",
+      city: "Mumbai",
+      location: { type: 'Point', coordinates: [73.0487, 19.0197] }, // [lon, lat]
+      contact: "022 3350 3350"
+    },
+    {
+      id: 2,
+      name: "Lilavati Hospital and Research Centre",
+      address: "A-791, Bandra Reclamation, Bandra West, Mumbai, Maharashtra 400050",
+      city: "Mumbai",
+      location: { type: 'Point', coordinates: [72.8277, 19.0543] }, // [lon, lat]
+      contact: "022 2675 1000"
+    },
+    {
+      id: 3,
+      name: "Deenanath Mangeshkar Hospital",
+      address: "Survey No 27, Erandwane, Pune, Maharashtra 411004",
+      city: "Pune",
+      location: { type: 'Point', coordinates: [73.8160, 18.5089] }, // [lon, lat]
+      contact: "020 4015 9000"
+    },
+    {
+      id: 4,
+      name: "Ruby Hall Clinic, Pune",
+      address: "40, Sassoon Rd, Pune, Maharashtra 411001",
+      city: "Pune",
+      location: { type: 'Point', coordinates: [73.8767, 18.5290] }, // [lon, lat]
+      contact: "020 6645 5999"
+    },
+    {
+      id: 5,
+      name: "Tata Memorial Hospital",
+      address: "Dr E Borges Rd, Parel, Mumbai, Maharashtra 400012",
+      city: "Mumbai",
+      location: { type: 'Point', coordinates: [72.8291, 18.9959] }, // [lon, lat]
+      contact: "022 2417 7000"
+    }
+  ];
+
+  // Haversine formula to calculate distance between two lat/lon points
+  const getDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371; // Radius of Earth in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+  
+  const findNearbyHospitals = () => {
+    if (navigator.geolocation) {
+      setLocationLoading(true);
+      setLocationError(null);
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          
+          // Calculate distance for all mock hospitals and sort
+          const hospitalsWithDistance = mockHospitals.map(hospital => {
+            const hospitalLat = hospital.location.coordinates[1];
+            const hospitalLon = hospital.location.coordinates[0];
+            const distance = getDistance(latitude, longitude, hospitalLat, hospitalLon);
+            return { ...hospital, distance };
+          }).sort((a, b) => a.distance - b.distance); // Sort by distance
+
+          setNearbyHospitals(hospitalsWithDistance);
+          setShowNearbyHospitalsModal(true);
+          setLocationLoading(false);
+        },
+        (err) => {
+          setLocationError(err.message || "Geolocation permission denied.");
+          setLocationLoading(false);
+        }
+      );
+    } else {
+      setLocationError("Geolocation is not supported by your browser.");
+    }
+  };
 
   const fetchApprovedDonors = async () => {
     setLoading(true);
@@ -109,40 +195,26 @@ export default function DonorsPage() {
     setShowContactModal(false);
     setSelectedDonor(null);
   };
-
-  // NEW: Function to get user location and fetch nearby hospitals
-  const findNearbyHospitals = () => {
+  
+  const handleOpenMaps = (hospital) => {
     if (navigator.geolocation) {
-      setLocationLoading(true);
-      setLocationError(null);
       navigator.geolocation.getCurrentPosition(
-        async (position) => {
+        (position) => {
           const { latitude, longitude } = position.coords;
-          try {
-            const response = await fetch(`http://localhost:3001/api/hospitals/nearby?lat=${latitude}&lon=${longitude}`);
-            if (!response.ok) {
-              throw new Error("Failed to fetch nearby hospitals.");
-            }
-            const data = await response.json();
-            setNearbyHospitals(data);
-            setShowNearbyHospitalsModal(true);
-          } catch (err) {
-            console.error("Error fetching hospitals:", err);
-            setLocationError(err.message);
-          } finally {
-            setLocationLoading(false);
-          }
+          const mapsUrl = `https://www.google.com/maps/dir/${latitude},${longitude}/${hospital.address}`;
+          window.open(mapsUrl, '_blank');
         },
         (err) => {
-          setLocationError(err.message || "Geolocation permission denied.");
-          setLocationLoading(false);
+          alert("Could not get your location for directions. Please try again.");
+          console.error("Geolocation error:", err);
         }
       );
     } else {
-      setLocationError("Geolocation is not supported by your browser.");
+      alert("Geolocation is not supported by your browser.");
     }
   };
-  
+
+
   if (loading) {
     return (
       <div className="min-h-screen flex justify-center items-center">
@@ -261,7 +333,6 @@ export default function DonorsPage() {
                 </div>
               </CardContent>
             </Card>
-            {/* NEW: Button to get nearby hospitals */}
             <div className="text-center mt-6">
                 <Button 
                     className="bg-red-600 hover:bg-red-700 text-white" 
@@ -430,17 +501,29 @@ export default function DonorsPage() {
                 <div className="grid gap-4">
                   {nearbyHospitals.map(hospital => (
                     <div key={hospital.id} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                      <h4 className="text-lg font-semibold text-gray-900">{hospital.name}</h4>
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-lg font-semibold text-gray-900">{hospital.name}</h4>
+                        <span className="text-sm text-gray-500">{hospital.distance.toFixed(2)} km away</span>
+                      </div>
                       <p className="text-sm text-gray-600 flex items-center space-x-2 mt-1">
                         <MapPin className="h-4 w-4" />
                         <span>{hospital.address}</span>
                       </p>
-                      <p className="text-sm text-gray-600 flex items-center space-x-2 mt-1">
-                        <Phone className="h-4 w-4" />
-                        <a href={`tel:${hospital.contact}`} className="hover:underline">
-                          {hospital.contact}
-                        </a>
-                      </p>
+                      <div className="flex justify-between items-center mt-3">
+                        <div className="flex items-center space-x-2 text-sm text-gray-700">
+                          <Phone className="h-4 w-4" />
+                          <a href={`tel:${hospital.contact}`} className="hover:underline">
+                            {hospital.contact}
+                          </a>
+                        </div>
+                        <Button 
+                          size="sm" 
+                          className="bg-red-600 hover:bg-red-700 text-white"
+                          onClick={() => handleOpenMaps(hospital)}
+                        >
+                          Get Directions
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -448,7 +531,6 @@ export default function DonorsPage() {
                 <div className="text-center py-8">
                   <Hospital className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-600 text-lg">No nearby hospitals found.</p>
-                  <p className="text-gray-500 text-sm mt-2">Try adjusting your search radius or city.</p>
                 </div>
               )}
               <div className="flex justify-end pt-4">
