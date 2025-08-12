@@ -19,6 +19,8 @@ const resend = new Resend(resendApiKey);
 
 // 3. Hardcoded Resend Verified Sender Email
 const resendFromEmail = 'onboarding@resend.dev'; // Resend's default sandbox email
+const Camp = require('./models/Camp'); 
+
 
 const app = express();
 const port = 3001;
@@ -309,6 +311,45 @@ app.get('/api/test-twilio', async (req, res) => {
         });
     }
 });
+
+// --- Endpoint to add a new blood camp ---
+app.post('/api/camps', async (req, res) => {
+  try {
+    const { title, organizer, date, time, location, city, expectedDonors, contact, description } = req.body;
+    
+    if (!title || !organizer || !date || !time || !location || !city || !expectedDonors || !contact) {
+      return res.status(400).json({ message: "Missing required fields." });
+    }
+
+    const newCamp = await Camp.create({
+      title, organizer, date, time, location, city, expectedDonors, contact, description,
+      status: "Upcoming",
+    });
+
+    console.log(`✅ Successfully added new camp to MongoDB: ${newCamp.title}`);
+    res.status(201).json({ message: "Blood camp added successfully.", camp: newCamp });
+  } catch (error) {
+    console.error('❌ Error adding blood camp:', error);
+    res.status(500).json({ error: "Failed to add blood camp.", details: error.message });
+  }
+});
+
+// --- Endpoint to get all camps ---
+app.get('/api/camps', async (req, res) => {
+  try {
+    const camps = await Camp.find({});
+    res.status(200).json(camps);
+  } catch (error) {
+    console.error('❌ Error fetching camps:', error);
+    res.status(500).json({ message: 'Failed to fetch camps.' });
+  }
+});
+
+
+
+
+
+
 
 // Basic route
 app.get('/', (req, res) => {
